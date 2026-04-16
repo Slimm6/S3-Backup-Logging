@@ -14,29 +14,21 @@
 #include <stdint.h>
 #include <sys/time.h>
 
-/* ------------------------------------------------------------------ */
-/* Operation type strings (passed to log_operation as op_type)         */
-/* ------------------------------------------------------------------ */
+
 #define S3LOG_OP_INIT     "INIT"
 #define S3LOG_OP_READ     "READ"
 #define S3LOG_OP_READLINK "READLINK"
 #define S3LOG_OP_GETATTR  "GETATTR"
 #define S3LOG_OP_READDIR  "READDIR"
 #define S3LOG_OP_SEEK     "SEEK"
-
-/* Result strings */
 #define S3LOG_OK      "OK"
 #define S3LOG_PARTIAL "PARTIAL"
 #define S3LOG_ERROR   "ERROR"
 #define S3LOG_TIMEOUT "TIMEOUT"
-
-/* Cache status strings */
 #define S3LOG_CACHE_HIT     "HIT"
 #define S3LOG_CACHE_MISS    "MISS"
 #define S3LOG_CACHE_PARTIAL "PARTIAL"
 #define S3LOG_CACHE_NA      "N/A"
-
-/* Sentinel values for fields that don't apply to an operation */
 #define S3LOG_NO_VERSION  (-1)
 #define S3LOG_NO_OFFSET   ((off_t)-1)
 #define S3LOG_NO_SIZE     ((size_t)-1)
@@ -82,13 +74,9 @@ struct s3log_config {
     int         cache_block_size_mb;    /* CACHE_BLOCK in MiB           */
 };
 
-/* ------------------------------------------------------------------ */
-/* Public API                                                          */
-/* ------------------------------------------------------------------ */
 
 /*
  * log_open - open the log file and write the [LOG_HEADER] block.
- * Call from fs_init() after all config fields are known.
  * Returns 0 on success, -1 if the file could not be opened (logging
  * is then silently disabled – ls->fp is left NULL).
  */
@@ -96,7 +84,6 @@ int log_open(struct s3log_state *ls, const struct s3log_config *cfg);
 
 /*
  * log_operation - append one tab-separated row to the log.
- *
  *   op_type      - one of the S3LOG_OP_* strings (or any short literal)
  *   path         - filesystem path visible to the user, or NULL / ""
  *   version      - backup version index; S3LOG_NO_VERSION if not applicable
@@ -128,10 +115,6 @@ void log_operation(struct s3log_state *ls,
  * Safe to call even if log_open() was never called or failed.
  */
 void log_close(struct s3log_state *ls);
-
-/* ------------------------------------------------------------------ */
-/* Utility helpers (also available to callers)                         */
-/* ------------------------------------------------------------------ */
 
 /*
  * s3log_timestamp - write an ISO-8601 timestamp with millisecond
