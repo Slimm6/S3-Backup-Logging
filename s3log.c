@@ -1,5 +1,5 @@
 /*
- * file:        s3log.c
+ * file: s3log.c
  * description: structured logging for s3fs / s3mount
  */
 
@@ -17,30 +17,17 @@
 
 #include "s3log.h"
 
-/*
- * s3log_timestamp - fill buf with the current wall time in the form
- *   2026-04-09T14:30:45.123Z
- * buf must be at least 32 bytes.
- */
 void s3log_timestamp(char *buf, size_t buflen)
 {
     struct timeval tv;
-    struct tm      tm_info;
-
+    struct tm tm_info;
     gettimeofday(&tv, NULL);
     gmtime_r(&tv.tv_sec, &tm_info);
-
-    /* "2026-04-09T14:30:45" = 19 chars */
     strftime(buf, buflen, "%Y-%m-%dT%H:%M:%S", &tm_info);
-
-    /* append ".mmmZ" */
     size_t len = strlen(buf);
     snprintf(buf + len, buflen - len, ".%03ldZ", (long)(tv.tv_usec / 1000));
 }
 
-/*
- * s3log_elapsed_ms - milliseconds elapsed since *start.
- */
 long s3log_elapsed_ms(const struct timeval *start)
 {
     struct timeval now;
@@ -49,11 +36,8 @@ long s3log_elapsed_ms(const struct timeval *start)
                   (now.tv_usec - start->tv_usec) / 1000L);
 }
 
-
 /*
- * Write the [LOG_HEADER] block.  Fields whose config pointer is NULL
- * or whose int flag is 0/negative are omitted or shown as their
- * defaults to keep the header readable.
+ * Write the [LOG_HEADER] block.
  */
 static void write_header(FILE *fp, const struct s3log_config *cfg)
 {
@@ -64,7 +48,6 @@ static void write_header(FILE *fp, const struct s3log_config *cfg)
         strncpy(hostname, "unknown", sizeof(hostname));
     fprintf(fp,
             "[LOG_HEADER]\n"
-            "version=1.0\n"
             "timestamp=%s\n"
             "pid=%d\n"
             "hostname=%s\n",
@@ -109,34 +92,35 @@ static void write_header(FILE *fp, const struct s3log_config *cfg)
     fflush(fp);
 }
 
-
+/*
+* Opens the log file.
+*/
 int log_open(struct s3log_state *ls, const struct s3log_config *cfg)
 {
     memset(ls, 0, sizeof(*ls));
-
     if (!cfg->logfile || cfg->logfile[0] == '\0')
-        return 0;   /* logging disabled – ls->fp stays NULL */
-
+        return 0; 
     ls->fp = fopen(cfg->logfile, "w");
     if (!ls->fp) {
         perror("s3log: could not open log file");
         return -1;
     }
-
     gettimeofday(&ls->mount_time, NULL);
     write_header(ls->fp, cfg);
     return 0;
 }
 
-
+/*
+ * Writes a log entry for an operation.
+ */
 void log_operation(struct s3log_state *ls,
                    const char *op_type,
                    const char *path,
-                   int         version,
-                   off_t       offset,
-                   size_t      len,
-                   size_t      actual,
-                   long        duration_ms,
+                   int version,
+                   off_t offset,
+                   size_t len,
+                   size_t actual,
+                   long duration_ms,
                    const char *result,
                    const char *cache_status,
                    const char *error)
@@ -200,7 +184,9 @@ void log_operation(struct s3log_state *ls,
     fflush(ls->fp);
 }
 
-
+/*
+* Writes the statistics footer.
+*/
 static void write_statistics(FILE *fp, const struct s3log_state *ls)
 {
     long duration_sec = s3log_elapsed_ms(&ls->mount_time) / 1000L;
