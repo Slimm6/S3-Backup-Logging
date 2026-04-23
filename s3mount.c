@@ -343,7 +343,7 @@ again:
     goto again;
 }
 
-void do_read(struct state *s, const char *key, int version, void *ptr, size_t len, off_t offset)
+const char do_read(struct state *s, const char *key, int version, void *ptr, size_t len, off_t offset)
 {
     if (s->nocache) {
         struct timeval t0;
@@ -377,10 +377,7 @@ void do_read(struct state *s, const char *key, int version, void *ptr, size_t le
     const char *cache_status = (hits > 0 && misses == 0) ? S3LOG_CACHE_HIT
                               : (hits == 0)               ? S3LOG_CACHE_MISS
                                                           : S3LOG_CACHE_PARTIAL;
-    log_operation(&s->log, S3LOG_OP_READ, key, version,
-                  start_offset, len, total_read,
-                  s3log_elapsed_ms(&t0),
-                  S3LOG_OK, cache_status, NULL);
+    return cache_status;
 }
 
 
@@ -903,8 +900,11 @@ int fs_read(const char *path, char *buf, size_t len, off_t offset,
     
     long int base = de.off.s.sector*512;
     //_filename = path;
-    do_read(s, s->names[de.off.s.object], de.off.s.object, buf, len, base+offset);
-
+    const char *cs = do_read(s, s->names[de.off.s.object], de.off.s.object, buf, len, base+offset);
+    log_operation(&s->log, S3LOG_OP_READ, key, version,
+                  start_offset, len, total_read,
+                  s3log_elapsed_ms(&t0),
+                  S3LOG_OK, cs, NULL);
     return len;
 }
 
@@ -926,7 +926,6 @@ int fs_readlink(const char *path, char *buf, size_t len)
                       S3LOG_CACHE_NA, strerror(-val));
 	return val;
     }
-
     if (!S_ISLNK(de.mode)) {
         log_operation(&s->log, S3LOG_OP_READLINK, path,
                       S3LOG_NO_VERSION, S3LOG_NO_OFFSET,
@@ -937,13 +936,13 @@ int fs_readlink(const char *path, char *buf, size_t len)
     }
     int n = (len-1 < de.bytes) ? len-1 : de.bytes;
 
-    do_read(s, s->names[de.off.s.object], de.off.s.object, buf, n, de.off.s.sector*512);
+    const char *cs = do_read(s, s->names[de.off.s.object], de.off.s.object, buf, n, de.off.s.sector*512);
     buf[n] = 0;
 
     log_operation(&s->log, S3LOG_OP_READLINK, path,
                   (int)de.off.s.object, (off_t)(de.off.s.sector * 512),
                   (size_t)n, (size_t)n,
-                  s3log_elapsed_ms(&t0), S3LOG_OK, S3LOG_CACHE_NA, NULL);
+                  s3log_elapsed_ms(&t0), S3LOG_OK, cs, NULL);
     return 0;
 }
 
