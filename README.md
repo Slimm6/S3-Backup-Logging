@@ -111,7 +111,6 @@ The log header is formatted as the following:
 - cache_size_mb
 - cache_block_size_mb
 - nocache_mode
-- mount_user
 - s3_host
 
 [END_HEADER]
