@@ -177,9 +177,6 @@ The log footer is formatted as the following:
 - avg_read_duration_ms
 - max_read_duration_ms
 - s3_retries_total
-- s3_retry_max_consecutive
-- most_accessed_version
-- least_accessed_version
 
 [END_STATISTICS]
 
